@@ -1,0 +1,80 @@
+version: "3.7"
+services:
+  influxdb:
+    image: influxdb:2.0.7
+    volumes:
+      # Mount for influxdb data directory and configuration
+      - ./influxdb/data:/var/lib/influxdb2:rw
+    ports:
+      - "8086:8086"
+    environment:
+      # Use these same configurations parameters in your telegraf configuration, mytelegraf.conf.
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=mypasswordmypasswordmypassword
+      - DOCKER_INFLUXDB_INIT_ORG=Libre
+      - DOCKER_INFLUXDB_INIT_BUCKET=Libre
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mytokenmytokenmytoken
+    container_name: influxdb
+    healthcheck:
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      test: ["CMD", "curl", "-f", "http://influxdb:8086"]
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: always
+    environment:
+      - GF_INSTALL_PLUGINS=fifemon-graphql-datasource,marcusolsson-gantt-panel,isaozler-paretochart-panel,michaeldmoore-multistat-panel
+    ports:
+      - "8087:8087"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/plugins:/var/lib/grafana/plugins
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/data:/var/lib/grafana
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+    depends_on:
+      - "influxdb"
+  elasticsearch:
+      image: "docker.elastic.co/elasticsearch/elasticsearch:7.15.2"
+      ports: 
+          - "9200:9200"    
+          - "9300:9300"
+      environment:
+          - "discovery.type=single-node"
+          - bootstrap.memory_lock=true
+          - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      volumes:
+        - data01:/usr/share/elasticsearch/data
+  kibana:
+      image: "docker.elastic.co/kibana/kibana:7.15.2"
+      ports:
+          - "5601:5601"
+      depends_on:
+          - elasticsearch
+      command: "kibana --allow-root"
+      user: root        
+  telegraf-ingest:
+      image: telegraf:1.20.3
+      volumes:
+          - ./telegraf/telegraf-ingest.conf:/etc/telegraf/telegraf.conf:ro
+          - ./telegraf/jsonparser.star:/etc/telegraf/jsonparser.star:ro
+          - ./telegraf/jsonparser_2.star:/etc/telegraf/jsonparser_2.star:ro
+      depends_on:
+          - "influxdb"
+  telegraf-collect:
+      image: telegraf:1.20.3
+      volumes:
+          - ./telegraf/telegraf-collect.conf:/etc/telegraf/telegraf.conf:ro
+      depends_on:
+          - "influxdb"
+
+volumes:
+  data01:
+    driver: local
+  data02:
+    driver: local
+  data03:
+    driver: local      

@@ -1,0 +1,3 @@
+*.docker
+influxdb
+grafana/data/grafana.db
