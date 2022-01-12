@@ -1,5 +1,15 @@
 version: "3.7"
 services:
+  reverse:
+    container_name: reverse
+    hostname: reverse
+    image: nginx
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./nginx:/etc/nginx
+      - ./certs:/etc/ssl/private
   influxdb:
     image: influxdb:2.0.7
     volumes:
@@ -22,7 +32,7 @@ services:
       retries: 5
       test: ["CMD", "curl", "-f", "http://influxdb:8086"]
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:8.3.3
     container_name: grafana
     restart: always
     environment:
@@ -62,6 +72,7 @@ services:
           - ./telegraf/telegraf-ingest.conf:/etc/telegraf/telegraf.conf:ro
           - ./telegraf/jsonparser.star:/etc/telegraf/jsonparser.star:ro
           - ./telegraf/jsonparser_2.star:/etc/telegraf/jsonparser_2.star:ro
+          - ./telegraf/ingest/log:/var/log/telegraf
       depends_on:
           - "influxdb"
   telegraf-collect:
