@@ -35,7 +35,7 @@ services:
       - ./nginx:/etc/nginx
       - ./certs:/etc/ssl/private
   influxdb:
-    image: influxdb:2.0.7
+    image: influxdb:2.1.1
     volumes:
       # Mount for influxdb data directory and configuration
       - ./influxdb/data:/var/lib/influxdb2:rw
